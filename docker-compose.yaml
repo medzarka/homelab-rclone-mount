@@ -1,0 +1,28 @@
+services:
+  # ========================================================
+  # RCLONE REMOTE MOUNTS (Containerized Rclone)
+  # ========================================================
+  rclone-mount:
+    image: rclone/rclone:latest
+    container_name: ${CONTAINER_NAME:-rclone-mount}
+    restart: unless-stopped
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    devices:
+      - /dev/fuse:/dev/fuse
+    environment:
+      - RCLONE_CONF_BASE64=${RCLONE_CONF_BASE64}
+      - RCLONE_REMOTE_PATH=${RCLONE_REMOTE_PATH}
+      - RCLONE_MOUNT_OPTIONS=${RCLONE_MOUNT_OPTIONS:---vfs-cache-mode full --allow-other --allow-non-empty --buffer-size 32M}
+    volumes:
+      - ${HOST_MOUNT_DIR:-${DATA_DIR:-/srv/data}/mount}:/data:rshared
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        mkdir -p /config/rclone
+        if [ -n "$$RCLONE_CONF_BASE64" ]; then
+          echo "$$RCLONE_CONF_BASE64" | base64 -d > /config/rclone/rclone.conf
+        fi
+        exec rclone mount "$$RCLONE_REMOTE_PATH" /data $$RCLONE_MOUNT_OPTIONS
