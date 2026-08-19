@@ -39,7 +39,7 @@ Edit `.env` with your desired configuration:
 | `RCLONE_REMOTE_PATH` | Rclone remote and subpath to mount | `seafile:Development` |
 | `HOST_MOUNT_DIR` | Directory on the host where files will be mounted | `/srv/data/Development` |
 | `CONTAINER_NAME` | Container name (optional) | `rclone-mount` |
-| `RCLONE_MOUNT_OPTIONS` | Extra mount flags (optional) | `--vfs-cache-mode full --allow-other --allow-non-empty --buffer-size 256M` |
+| `RCLONE_MOUNT_OPTIONS` | Extra mount flags (optional) | `--vfs-cache-mode full --allow-other --allow-non-empty --buffer-size 32M` |
 | `RCLONE_CONF_BASE64` | Base64-encoded `rclone.conf` | Single-line base64 string |
 
 ### 3. Generate Base64 Rclone Config
