@@ -36,6 +36,7 @@ Edit `.env` with your desired configuration:
 
 | Variable | Description | Example / Default |
 | :--- | :--- | :--- |
+| `TZ` | Timezone for container logs | `UTC` |
 | `RCLONE_REMOTE_PATH` | Rclone remote and subpath to mount | `seafile:Development` |
 | `HOST_MOUNT_DIR` | Directory on the host where files will be mounted | `/srv/data/Development` |
 | `CONTAINER_NAME` | Container name (optional) | `rclone-mount` |

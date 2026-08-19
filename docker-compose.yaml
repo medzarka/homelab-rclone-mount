@@ -13,6 +13,7 @@ services:
     devices:
       - /dev/fuse:/dev/fuse
     environment:
+      - TZ=${TZ:-UTC}
       - RCLONE_CONF_BASE64=${RCLONE_CONF_BASE64}
       - RCLONE_REMOTE_PATH=${RCLONE_REMOTE_PATH}
       - RCLONE_MOUNT_OPTIONS=${RCLONE_MOUNT_OPTIONS:---vfs-cache-mode full --allow-other --allow-non-empty --buffer-size 32M}
