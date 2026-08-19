@@ -1,6 +1,6 @@
 services:
   # ========================================================
-  # RCLONE REMOTE MOUNTS (Containerized Rclone)
+  # RCLONE REMOTE MOUNT (Containerized Rclone)
   # ========================================================
   rclone-mount:
     image: rclone/rclone:latest
@@ -15,15 +15,56 @@ services:
     environment:
       - TZ=${TZ:-UTC}
       - RCLONE_CONF_BASE64=${RCLONE_CONF_BASE64}
+      - RCLONE_CONFIG_PASS=${RCLONE_CONFIG_PASS}
       - RCLONE_REMOTE_PATH=${RCLONE_REMOTE_PATH}
-      - RCLONE_MOUNT_OPTIONS=${RCLONE_MOUNT_OPTIONS:---vfs-cache-mode full --allow-other --allow-non-empty --buffer-size 32M}
+      - RCLONE_LOG_LEVEL=${RCLONE_LOG_LEVEL:-INFO}
+      - RCLONE_MOUNT_OPTIONS=${RCLONE_MOUNT_OPTIONS:---vfs-cache-mode full --vfs-cache-max-size 10G --vfs-cache-max-age 24h --allow-other --allow-non-empty --buffer-size 32M}
     volumes:
       - ${HOST_MOUNT_DIR:-${DATA_DIR:-/srv/data}/mount}:/data:rshared
+      - rclone-cache:/root/.cache/rclone
+    # Optional Prometheus Metrics / Remote Control API port
+    # ports:
+    #   - "5572:5572"
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        mkdir -p /config/rclone
-        if [ -n "$$RCLONE_CONF_BASE64" ]; then
-          echo "$$RCLONE_CONF_BASE64" | base64 -d > /config/rclone/rclone.conf
+        echo "[$(date)] Starting rclone mount service..."
+
+        if [ -z "$$RCLONE_REMOTE_PATH" ]; then
+          echo "[$(date)] ERROR: RCLONE_REMOTE_PATH is not set in environment!"
+          exit 1
         fi
-        exec rclone mount "$$RCLONE_REMOTE_PATH" /data $$RCLONE_MOUNT_OPTIONS
+
+        mkdir -p /config/rclone /root/.cache/rclone /data
+
+        if [ -n "$$RCLONE_CONF_BASE64" ]; then
+          echo "[$(date)] Decoding RCLONE_CONF_BASE64 to /config/rclone/rclone.conf..."
+          if ! echo "$$RCLONE_CONF_BASE64" | base64 -d > /config/rclone/rclone.conf; then
+            echo "[$(date)] ERROR: Failed to decode RCLONE_CONF_BASE64! Check your base64 string."
+            exit 1
+          fi
+        elif [ ! -f /config/rclone/rclone.conf ]; then
+          echo "[$(date)] WARNING: No RCLONE_CONF_BASE64 provided and no existing rclone.conf found."
+        fi
+
+        # Clean up any leftover stale mounts inside the container before starting
+        fusermount -uz /data 2>/dev/null || true
+
+        echo "[$(date)] Mounting '$$RCLONE_REMOTE_PATH' to '/data' (Log Level: $$RCLONE_LOG_LEVEL)..."
+        exec rclone mount "$$RCLONE_REMOTE_PATH" /data \
+          --log-level "$$RCLONE_LOG_LEVEL" \
+          $$RCLONE_MOUNT_OPTIONS
+    healthcheck:
+      test: ["CMD-SHELL", "ls /data >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  rclone-cache:
