@@ -50,6 +50,9 @@ Edit `.env` with your desired configuration:
 
 ### 3. Generate Base64 Rclone Config
 
+> [!NOTE]
+> **Why Base64?** Deployment tools like **Dockhand**, **Portainer**, and standard Docker Compose cannot reliably parse multi-line `.env` variables. Converting `rclone.conf` into a single-line Base64 string solves this issue completely and allows seamless deployment via Web UIs.
+
 #### Mode A: Clear Configuration (Default)
 Generate the Base64 string directly:
 - **Linux:** `cat ~/.config/rclone/rclone.conf | base64 -w 0`
